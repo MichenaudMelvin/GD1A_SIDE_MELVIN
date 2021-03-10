@@ -18,8 +18,8 @@
 
 var config = {
     type: Phaser.AUTO,
-    width: 1920,
-    height: 1080,
+    width: 1280,
+    height: 720,
     physics: {
         default: 'arcade',
         arcade: {
@@ -33,6 +33,8 @@ var config = {
         update: update
     }
 };
+//need real resolution
+
 
 // class Entity{
 //     constructor(name, pv){
@@ -72,10 +74,11 @@ var cursors;
 var gameOver = false;
 
 var game = new Phaser.Game(config);
+var frame = 0;
 
 function preload (){
     this.load.image('sky', 'assets/fond.png');
-    this.load.image('ground', 'assets/platform.png');
+    this.load.image('ground', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/foregroundSol.png');
     this.load.image('coeur', 'assets/coeur.png');
     this.load.image('coeurVide', 'assets/coeurVide.png');
     this.load.image('laser', 'assets/laser.png');
@@ -84,13 +87,13 @@ function preload (){
 
 function create (){
     this.add.image(960, 485, 'sky');
+    
+    this.cameras.main.setSize(1920, 1080);
+    this.cameras.main.startFollow(this.player);
 
     speedLaser = Phaser.Math.GetSpeed(960, 0.05);
-    laser = this.add.sprite(100, 100, 'laser');
-    //retirer la physique de l'image
+    laser = this.add.sprite(100, 800, 'laser');
     
-    //ennemi = this.add.image(100, 100, 'laser')
-
     var ennemiTween = this.tweens.add({
         targets: laser,
         x: 1920,
@@ -102,15 +105,12 @@ function create (){
     platforms = this.physics.add.staticGroup();
     vie = this.physics.add.staticGroup();
 
-    platforms.create(400, 970, 'ground').setScale(2).refreshBody();
-    platforms.create(600, 400, 'ground');
-    platforms.create(50, 250, 'ground');
-    platforms.create(750, 220, 'ground');
+    platforms.create(960, 970, 'ground'); //sol
     vie.create(10, 10, 'coeur');
     vie.create(30, 10, 'coeur');
     vie.create(50, 10, 'coeur');
 
-    player = this.physics.add.sprite(100, 915, 'dude');
+    player = this.physics.add.sprite(100, 875, 'dude');
 
     player.setBounce(0.5);
     player.setCollideWorldBounds(true);
@@ -124,7 +124,7 @@ function create (){
 
     this.anims.create({
         key: 'turn',
-        frames: [ {key: 'dude', frame: 4} ],
+        frames: [{key: 'dude', frame: 4}],
         frameRate: 20
     });
 
@@ -139,7 +139,7 @@ function create (){
 
     this.physics.add.collider(player, platforms);
     // this.physics.add.collider(laser, platforms, laserCollider);
-    this.physics.add.overlap(player, laser, hitPlayer, null, this);
+    this.physics.add.overlap(player, ennemiTween, hitPlayer, null, this);
 }
 
 function update (){
@@ -147,6 +147,11 @@ function update (){
     // if (laser.x > 1920 || laser.x < 0){
     //     laser.x = 100;
     // }
+
+    frame = frame + 1
+    if(frame == 70){
+        frame = 0
+    }
 
     if (gameOver){
         return;
