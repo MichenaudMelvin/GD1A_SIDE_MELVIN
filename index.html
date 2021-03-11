@@ -33,41 +33,9 @@ var config = {
         update: update
     }
 };
-//need real resolution
 
-
-// class Entity{
-//     constructor(name, pv){
-//         this.name = name;
-//         this.pv = pv;
-//     } get name(){
-//         return this.name;
-//     } get pv(){
-//         return this.pv;
-//     }
-// }
-
-// class EntityPlayer extends Entity{
-//     constructor(name, pv, player){
-//         super(name, pv);
-//         this.name = name;
-//         this.pv = pv;
-//         this.player = player;
-//     }
-// }
-
-// class EntityEnnemi extends Entity{
-//     constructor(name, pv, degats){
-//         super(name, pv);
-//         this.name = name;
-//         this.pv = pv;
-//         this.degats = degats;
-//     }
-// }
 
 var player;
-// new EntityPlayer("regis", 3, player)
-
 var speedLaser;
 var platforms;
 var cursors;
@@ -75,6 +43,9 @@ var gameOver = false;
 
 var game = new Phaser.Game(config);
 var frame = 0;
+var jetpackValue = 100;
+
+var keyA;
 
 function preload (){
     this.load.image('background', 'assets/fond.png');
@@ -89,8 +60,7 @@ function create (){
     this.background = this.add.image(0, 0, 'background');
     this.background.setOrigin(0, 0);
 
-    laser = this.add.sprite(100, 100, 'laser');
-    
+    laser = this.add.sprite(100, 500, 'laser');
     var ennemiTween = this.tweens.add({
         targets: laser,
         x: 1920,
@@ -133,16 +103,20 @@ function create (){
     });
     
     cursors = this.input.keyboard.createCursorKeys();
+    keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A)
 
     this.physics.add.collider(player, platforms);
     // this.physics.add.collider(laser, platforms, laserCollider);
     this.physics.add.overlap(player, ennemiTween, hitPlayer, null, this);
     
-    this.cameras.setBounds(0, 0, game.config.width * 3, game.config.height);
-    this.cameras.main.startFollow(this.player);
+    //regarder le logiciel tiled
+    
+    this.cameras.main.startFollow(player);
+    // this.cameras.setBounds(0, 0, game.config.width * 3, game.config.height);
 }
 
 function update (){
+    console.log(jetpackValue)
     this.background.tilePositionX = this.cameras.scrollX * .3;
     frame = frame + 1
     if(frame == 70){
@@ -169,12 +143,30 @@ function update (){
         player.anims.play('turn');
     }
 
-    if (cursors.up.isDown && player.body.touching.down){
+    if (cursors.up.isDown && jetpackValue > 0){
+        jetpackValue = jetpackValue - 1
         player.setVelocityY(-330);
     }
-    /*function avanceEnnemi (ennemiTween, target){
-        target.toggleFlipX().setAlpha(0.2 + Math.random());
-    } */
+
+    if(player.body.touching.down){
+        while(jetpackValue != 100){
+            jetpackValue = jetpackValue + 1;
+        }
+    }
+
+    if (keyA.isDown){
+        player.setVelocityX(330)
+        var ennemiTween = this.tweens.add({
+            targets: laser,
+            x: 1280,
+            duration: 960,
+            yoyo: false,
+            repeat: -1,
+        });
+    }
+    // function avanceEnnemi (ennemiTween, target){
+    //     target.toggleFlipX().setAlpha(0.2 + Math.random());
+    // }
 }
 
 // function laserCollider()
@@ -199,8 +191,5 @@ function hitPlayer(player, ennemi, pv){
 }
 
 </script>
-
-<!--<div class="info">Move with arrows keys</div>-->
-
 </body>
 </html>
