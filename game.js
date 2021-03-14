@@ -1,0 +1,364 @@
+// import TitleScreen from './titleScreen.js';
+// import GameScene from './gameScene.js';
+// console.log("congrats, you opened the console");
+
+//config game
+// var titleScreen = new TitleScreen();
+// var gameScene = new GameScene();
+
+// class GameScene extends Phaser.Scene{
+//     constructor(){
+//         super({key: 'gameScene'});
+//     }
+//     preload(){
+
+//     }
+    
+//     create(){
+//     }
+// }
+// export default GameScene;
+
+var config = {
+    type: Phaser.AUTO,
+    width: 1280,
+    height: 720,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: {y: 300},
+            debug: false,
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+// var game = new Phaser.Game(config);
+
+// title.scene.add('titleScreen', titleScreen);
+// // game.scene.add('game', gameScene);
+
+// game.scene.start("titleScreen")
+
+//all variables
+var player;
+var speedLaser;
+var platforms;
+var cursors;
+var gameOver = false;
+
+var game = new Phaser.Game(config);
+var frame = 0;
+
+//pour gestion de vie
+var hit;
+var reculDone;
+var pv = 3;
+var frameInvulnerable = 0;
+
+//variables qui permette le jetpack
+var text;
+var jetpackValue = 100;
+var jetpackValueTxt = "";
+var ableToUseJet = false;
+var checkUpisUp = false;
+var startJetPackDone = false;
+var frameCheckOnce = false;
+
+
+//variables pour ennmis :
+var timerEnnemi = 0;
+var deplacementEnnemi;
+var alreadyShuffle = false;
+var frameDePause1;
+var frameDePause2;
+var keyA;
+
+//pour ennmis qui tire
+var directionLaser;
+var laserAlreadyShot = false;
+var rechargeEnnemi;
+var lastPose = "right";
+
+function preload (){
+    this.load.image('test', 'assets/testItem.png');
+    this.load.image('background', 'assets/fond.png');
+    this.load.image('ground', 'fichier_de_travail/test.png');
+    this.load.image('coeur', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeur.png');
+    this.load.image('coeurVide', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeurVide.png');
+    this.load.image('laser', 'assets/laser.png');
+    this.load.spritesheet('dude', 'assets/dude.png', {frameWidth: 32, frameHeight: 48});
+}
+
+function create (){
+    this.background = this.add.image(0, 0, 'background');
+    this.background.setOrigin(0, 0);
+    
+    platforms = this.physics.add.staticGroup();
+    vie = this.physics.add.staticGroup();
+
+    platforms.create(640, 675, 'ground'); //sol
+    vie.create(45, 50, 'coeur');
+    vie.create(115, 50, 'coeur');
+    vie.create(185, 50, 'coeur');
+
+    player = this.physics.add.sprite(100, 600, 'dude');
+    testOppo = this.physics.add.sprite(700, 600, 'test');
+
+    player.setBounce(0); //just for debug, when it's done set to 0.5 
+    player.setCollideWorldBounds(true);
+    testOppo.setCollideWorldBounds(true);
+    
+    this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('dude', {start: 0, end: 3}),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'turn',
+        frames: [{key: 'dude', frame: 4}],
+        frameRate: 20
+    });
+
+    this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('dude', {start: 5, end: 8}),
+        frameRate: 10,
+        repeat: -1
+    });
+    
+    cursors = this.input.keyboard.createCursorKeys();
+    keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A)
+
+    //gestion des collisions
+    this.physics.add.collider(player, platforms, colliderPlatformPlayer);
+    // this.physics.add.collider(laser, platforms, laserCollider);
+    this.physics.add.collider(testOppo, platforms);
+    this.physics.add.overlap(player, testOppo, hitPlayer);
+    //quand powerUp est touché
+    // this.physics.add.overlap(player, powerUp, powerUpFunction);
+
+    //regarder le logiciel tiled
+    
+    // this.cameras.main.startFollow(player);
+    // this.cameras.main.setSize(1280,720);
+}
+
+function update (){
+    frame = frame + 1;
+    if(frame == 70){
+        frame = 0
+    }
+
+    if (gameOver){
+        return;
+    }
+    //simples moves
+    if(hit == false){
+        if (cursors.left.isDown){
+            lastPose = "left";
+            player.setVelocityX(-160);
+
+            player.anims.play('left', true);
+        } else if (cursors.right.isDown){
+            lastPose = "right";
+            player.setVelocityX(160);
+
+            player.anims.play('right', true);
+        } else {
+            player.setVelocityX(0);
+
+            player.anims.play('turn');
+        }
+    }
+
+    //saut + jetpack
+    if (player.body.touching.down && cursors.up.isDown){
+        hit = false;
+        console.log(hit);
+        player.setVelocityY(-330);
+        ableToUseJet = true;
+    }
+
+    if (!player.body.touching.down && cursors.up.isUp && ableToUseJet == true && jetpackValue > 0){
+        checkUpisUp = true;
+    } if (cursors.up.isDown && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
+        jetpackValue = jetpackValue - 1
+        if(startJetPackDone == true){
+            for(let i = 0; i < 1000; i ++){
+                player.setVelocityY(-1*i);
+                startJetPackDone = true;
+            }
+        
+        } else{
+            player.setVelocityY(-300);
+        } if (jetpackValue < 0){
+            jetpackValue = 0;
+        }
+    }
+    
+    if(cursors.up.isUp && checkUpisUp == true && ableToUseJet == true){
+        startJetPackDone = false;
+        frameCheckOnce = false;
+    }
+
+    if(jetpackValue < 100){
+        if(player.x < 100){
+            xJetText = 100;
+        } else{
+            xJetText = -100;
+        }
+        //make this shit disappear
+        text = this.add.text(player.x+xJetText, player.y, jetpackValue);
+        if(frameCheckOnce == false){
+            var frameCheck = frame+10
+            frameCheckOnce = true;
+        }
+        while(frame <= frameCheck){
+            text.destroy();
+            frame = frame+1;
+        }
+    }
+
+    timerEnnemi = timerEnnemi + 1;
+    //comportement de l'ennemi
+    //working but look at acceleration
+    if(timerEnnemi >= 0 && timerEnnemi < 100){
+        if(alreadyShuffle == false){
+            frameDePause1 = chiffreAleatoire(10, 250);
+            frameDePause2 = chiffreAleatoire(10, 250);
+            deplacementEnnemi = (-chiffreAleatoire(100, 300));
+            alreadyShuffle = true;
+        } testOppo.setVelocityX(deplacementEnnemi);
+    } else if (timerEnnemi > 100 && timerEnnemi < frameDePause1){
+        alreadyShuffle = false;
+        testOppo.setVelocityX(0);
+    } else if (timerEnnemi > frameDePause1 && timerEnnemi < (frameDePause1+frameDePause2)){
+        if(alreadyShuffle == false){
+            deplacementEnnemi = chiffreAleatoire(100, 300);
+            alreadyShuffle = true;
+        } testOppo.setVelocityX(deplacementEnnemi);
+    } else if (timerEnnemi > (frameDePause1+frameDePause2) && timerEnnemi < (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2))){
+        alreadyShuffle = false;
+        testOppo.setVelocityX(0);
+    } else if (timerEnnemi >= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2))){
+        timerEnnemi = 0;
+    }
+
+    //invulnerabilite du joueur
+    if(frameInvulnerable > 0){
+        if(reculDone == false){
+            if(lastPose == "left"){
+                player.anims.play('left', true);
+                player.setVelocityX(200);
+            } else if (lastPose == "right"){
+                player.anims.play('right', true);
+                player.setVelocityX(-200);
+            }
+            hit = true;
+            player.setVelocityY(-100);
+            reculDone = true;
+        }
+        frameInvulnerable = frameInvulnerable - 1;
+        this.tweens.add({
+            targets: player,
+            duration: 500,
+            repeat: 5,
+        });
+    }
+
+    //permetra le tri de l'ennemi
+    if(player.y+10 >= testOppo.y && player.y-10 <= testOppo.y){
+        if(laserAlreadyShot == false){
+            if(player.x+200 < testOppo.x){
+                directionLaser = "left";
+            } else if(player.x+200 > testOppo.x){
+                directionLaser = "right";
+            } laser = this.physics.add.sprite(testOppo.x+10, testOppo.y, 'laser');
+            rechargeEnnemi = 500;
+            laserAlreadyShot = true;
+        }
+    }
+
+    if(laserAlreadyShot == true){
+        this.physics.add.overlap(player, laser, hitPlayer);
+        laser.setVelocityY(-5);
+        if(directionLaser == "left"){
+            laser.setVelocityX(-1000);
+        } else if(directionLaser == "right"){
+            laser.setVelocityX(1000);
+        }if(laser.x >= 1280 || laser.x <= 0){
+            laser.disableBody(true, true);
+        } rechargeEnnemi = rechargeEnnemi - 1;
+        if (rechargeEnnemi == 0){
+            laserAlreadyShot = false;
+        }
+    }
+
+    // if (keyA.isDown && hit == false){
+    // if(lastPose == "left" || cursors.left.isDown && keyA.isDown){
+    //     if(laserAlreadyShot == false){
+    //         laser = this.physics.add.sprite(testOppo.x+10, testOppo.y, 'laser');
+    //         laserAlreadyShot = true;
+    //     }
+    // } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
+        
+    // }
+    // var ennemiTween = this.tweens.add({
+    //     targets: laser,
+    //     x: 1280,
+    //     duration: 960,
+    //     yoyo: false,
+    //     repeat: -1,
+    // });
+    // }
+}
+
+//pour le reset du jetPack
+function colliderPlatformPlayer(){
+    hit = false;
+    checkUpisUp = false;
+    ableToUseJet = false;
+    for(let i = 0; i < 9; i++){
+        jetpackValue = jetpackValue + i;
+    } if(jetpackValue > 100){
+        jetpackValue = 100;
+    }
+}
+
+function powerUpFunction(){
+    powerUp.disableBody(true, true);
+    player.setVelocityY(-1500);
+}
+
+function hitPlayer(){
+    if(pv != 0 && frameInvulnerable == 0){
+        if(pv == 3 && frameInvulnerable == 0){
+            vie.create(45, 50, 'coeurVide');
+            frameInvulnerable = 100;
+            reculDone = false;
+        } else if(pv == 2 && frameInvulnerable == 0){
+            vie.create(115, 50, 'coeurVide');
+            frameInvulnerable = 100;
+            reculDone = false;
+        } else if(pv == 1 && frameInvulnerable == 0){
+            vie.create(185, 50, 'coeurVide');
+            reculDone = false;
+        }
+        pv = pv - 1;
+    
+    } if(pv == 0){
+        player.setVelocityX(4000);
+    }
+}
+
+function chiffreAleatoire(min, max){
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}
