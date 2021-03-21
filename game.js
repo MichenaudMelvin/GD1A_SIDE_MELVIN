@@ -18,9 +18,13 @@ var config = {
     }
 };
 
+//known issues
+// reload is broken
+// sometimes the ennemis does moonwalk
+// maybe other things
+
 //all variables
 var player;
-var speedLaser;
 var platforms;
 var cursors;
 var gameOver = false;
@@ -31,7 +35,7 @@ var frame = 0;
 //pour gestion de vie
 var hit;
 var reculDone;
-var pv = 3;
+var pv;
 var frameInvulnerable = 0;
 
 //variables qui permette le jetpack
@@ -88,6 +92,10 @@ var paddle;
 //pour l'écran titre:
 var gameCanBeLoad = false;
 var gameLoad = false;
+var resetGame = false;
+var tempsDePauseEcranTitre;
+var tempsDeReload;
+var playerIsDead = false;
 
 function preload (){
     this.load.image('test', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/test.png');
@@ -194,7 +202,15 @@ function create (){
 
 function update (){
     // this.background.tilePositionX = this.cameras.scrollX * .3;
-
+    if(resetGame == true){
+        this.cameras.main.fadeIn(500, 0, 0, 0)
+        this.ecranTitre = this.add.image(0, 0, 'ecranTitre');
+        this.ecranTitre.setOrigin(0, 0);
+        resetGame = false;
+        gameCanBeLoad = false;
+        gameLoad = false;
+        location.reload();
+    }
 
     if(keyA.isDown && gameLoad == false){
         this.cameras.main.fadeOut(500, 0, 0, 0)
@@ -205,7 +221,18 @@ function update (){
     if(gameCanBeLoad == true && gameLoad == false){
         tempsDePauseEcranTitre = tempsDePauseEcranTitre - 1
         if(tempsDePauseEcranTitre <= 0){
-            this.cameras.main.fadeIn(500, 0, 0, 0)
+            //valeurs pour le reset
+            playerIsDead = false;
+            pv = 3;
+            frameInvulnerable = 0;
+            reculDone = true;
+            hit = false;
+            ableToUseJet = false;
+            checkUpisUp = false;
+            startJetPackDone = false;
+            frameCheckOnce = false;
+
+            this.cameras.main.fadeIn(500, 0, 0, 0);
             this.ecranTitre.destroy();
             //creation des toutes les images
             this.background = this.add.image(0, 0, 'background');
@@ -270,12 +297,22 @@ function update (){
         if(frame == 70){
             frame = 0
         }
-        // if (pv == 0){
-        //     player.setVelocityX(0);
-        //     player.setVelocityY(0);
-        //     player.anims.play('turn', true);
-        //     return;
-        // }
+        if (pv == 0){
+            if(playerIsDead == false){
+                hit = true;
+                player.anims.play('turn', true);
+                tempsDeReload = 100;
+                playerIsDead = true;
+            }
+            if(tempsDeReload > 0){
+                console.log(tempsDeReload);
+                tempsDeReload = tempsDeReload - 1;
+                console.log(tempsDeReload);
+            } else if (tempsDeReload == 0){
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                resetGame = true;
+            }
+        }
 
         //animation du midground en continu
         frameMidground = frameMidground+1;
@@ -496,9 +533,11 @@ function update (){
                 if(lastPose == "left"){
                     player.anims.play('left', true);
                     player.setVelocityX(200);
+                    console.log("gauche")
                 } else if (lastPose == "right"){
                     player.anims.play('right', true);
                     player.setVelocityX(-200);
+                    console.log("droite")
                 } hit = true;
                 player.setVelocityY(-100);
                 reculDone = true;
@@ -510,12 +549,13 @@ function update (){
         }
         
         if(hitPlayerByFireBall == true){
-            // this.cameras.main.shake(200);
+            this.cameras.main.shake(200);
             pv = 0;
             this.coeur_1.destroy();
             this.coeur_2.destroy();
             this.coeur_3.destroy();
             fireball.disableBody(true, true);
+            hitPlayerByFireBall = false
         }
 
         // } else if(frameInvulnerable == 0){
@@ -524,7 +564,7 @@ function update (){
 
         if(hitAstraunauteByFireBall == true){
             hitAstraunaute = true;
-            // this.cameras.main.shake(200);
+            this.cameras.main.shake(200);
             hitAstraunauteByFireBall = false;}
 
         //permetra le tri de l'ennemi
@@ -605,7 +645,7 @@ function update (){
 
         if(crashFireballTest == true){
             if(particuleGenerate == false){
-                // this.cameras.main.shake(200);
+                this.cameras.main.shake(200);
                 particule_1 = this.physics.add.sprite(fireball.x+10, fireball.y+60, 'particule_1');
                 particule_2 = this.physics.add.sprite(fireball.x-20, fireball.y+55, 'particule_2');
                 particule_3 = this.physics.add.sprite(fireball.x-5, fireball.y+50, 'particule_3');
@@ -669,7 +709,7 @@ function hitPlayer(){
 function crashFireball(){particuleGenerate = false;crashFireballTest = true;}
 
 //quand la fireball touche le joueur / overlap
-function fireballHitingPlayer(){hitPlayerByFireBall = true; fireballCanBeGenerated = true}
+function fireballHitingPlayer(){hitPlayerByFireBall = true;fireballCanBeGenerated = true}
 
 //quand la fireball touche l'ennmi / overlap
 function fireballHitingOppo(){
