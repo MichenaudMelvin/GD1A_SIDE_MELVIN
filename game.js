@@ -10,6 +10,7 @@ var config = {
             debug: false,
         }
     },
+    input:{gamepad:true},
     scene: {
         preload: preload,
         create: create,
@@ -57,13 +58,15 @@ var rechargeEnnemi;
 var lastPose = "right";
 var hitAstraunaute = false;
 var pauseShootEnnemi = false;
-var tempsDePauseEnnemi = 0
+var tempsDePauseEnnemi = 0;
 
 //pour joueur qui tire
 var laserAlreadyShotPlayer = false;
 var rechargePlayer;
 var directionLaserPlayer;
 var hitAstraunauteByLaserPlayer;
+var tempsAnimPlayer = 0;
+var animPlayer;
 
 //pour la fireball
 var particuleGenerate = false;
@@ -77,6 +80,10 @@ var hitPlayerByFireBall = false;
 var firstPart = true;
 var secondPart = false;
 var frameMidground = 0;
+
+//pour controles manette
+var paddleConnected = false;
+var paddle;
 
 function preload (){
     this.load.image('test', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/test.png');
@@ -236,6 +243,11 @@ function update (){
     //     return;
     // }
 
+    this.input.gamepad.once('connected',function(pad){
+        paddleConnected = true ;
+        paddle = pad;
+    });
+
     frame = frame + 1;
     if(frame == 70){
         frame = 0
@@ -247,90 +259,208 @@ function update (){
 
     //simples moves
     if(hit == false){
-        if (cursors.left.isDown){
-            lastPose = "left";
-            player.setVelocityX(-160);
-
-            player.anims.play('left', true);
-        } else if (cursors.right.isDown){
-            lastPose = "right";
-            player.setVelocityX(160);
-
-            player.anims.play('right', true);
-        } else {
-            player.setVelocityX(0);
-
-            player.anims.play('turn');
-        }
-    }
-
-    //saut + jetpack
-    if (player.body.touching.down && cursors.up.isDown && hit == false){
-        player.setVelocityY(-330);
-        ableToUseJet = true;
-    }
-
-    if (!player.body.touching.down && cursors.up.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false){
-        checkUpisUp = true;
-    } if (cursors.up.isDown && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
-        jetpackValue = jetpackValue - 1
-        if(startJetPackDone == true){
-            for(let i = 0; i < 1000; i ++){
-                player.setVelocityY(-1*i);
-                startJetPackDone = true;
+        //controles clavier
+        if(paddleConnected == false){
+            if (cursors.left.isDown){
+                tempsAnimPlayer = 0;
+                lastPose = "left";
+                player.setVelocityX(-160);
+                player.anims.play('left', true);
+            } else if (cursors.right.isDown){
+                tempsAnimPlayer = 0;
+                lastPose = "right";
+                player.setVelocityX(160);
+                player.anims.play('right', true);
+            } else {
+                player.setVelocityX(0);
+                player.anims.play('turn');
             }
-        } else{player.setVelocityY(-300);}
-        if (jetpackValue < 0){jetpackValue = 0;}
-    }
-    
-    if(cursors.up.isUp && checkUpisUp == true && ableToUseJet == true){
-        startJetPackDone = false;
-        frameCheckOnce = false;
-    }
 
-    if(jetpackValue < 100){
-        if(player.x < 100){xJetText = 100;} 
-        else{xJetText = -100;}
+            //saut + jetpack
+            if (player.body.touching.down && cursors.up.isDown && hit == false){
+                player.setVelocityY(-330);
+                ableToUseJet = true;
+            }
 
-        text = this.add.text(player.x+xJetText, player.y, jetpackValue);
-        if(frameCheckOnce == false){
-            var frameCheck = frame;
-            frameCheckOnce = true;
+            if (!player.body.touching.down && cursors.up.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false){
+                checkUpisUp = true;
+            } if (cursors.up.isDown && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
+                jetpackValue = jetpackValue - 1
+                if(startJetPackDone == true){
+                    for(let i = 0; i < 1000; i ++){
+                        player.setVelocityY(-1*i);
+                        startJetPackDone = true;
+                    }
+                } else{player.setVelocityY(-300);}
+                if (jetpackValue < 0){jetpackValue = 0;}
+            }
+            
+            if(cursors.up.isUp && checkUpisUp == true && ableToUseJet == true){
+                startJetPackDone = false;
+                frameCheckOnce = false;
+            }
+
+            if(jetpackValue < 100){
+                if(player.x < 100){xJetText = 100;} 
+                else{xJetText = -100;}
+
+                text = this.add.text(player.x+xJetText, player.y, jetpackValue);
+                if(frameCheckOnce == false){
+                    var frameCheck = frame;
+                    frameCheckOnce = true;
+                }
+                while(frame <= frameCheck){
+                    text.destroy();
+                    frame = frame+1;
+                }
+            }
+
+            //tir du joueur
+            if (keyA.isDown && laserAlreadyShotPlayer == false){
+                if(lastPose == "left" || (cursors.left.isDown && keyA.isDown)){
+                    laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
+                    laserAlreadyShotPlayer = true;
+                    directionLaserPlayer = "left";
+                    animPlayer = "left";
+                    tempsAnimPlayer = 20;
+                } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
+                    laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
+                    laserAlreadyShotPlayer = true;
+                    directionLaserPlayer = "right";
+                    animPlayer = "right";
+                    tempsAnimPlayer = 20;
+                } rechargePlayer = 100;
+            } if(tempsAnimPlayer > 0){
+                tempsAnimPlayer = tempsAnimPlayer - 1
+                player.anims.play(animPlayer, true);
+            }
         }
-        while(frame <= frameCheck){
-            text.destroy();
-            frame = frame+1;
+
+        //controles manette
+        if (paddleConnected == true){
+            if (paddle.left){
+                tempsAnimPlayer = 0;
+                lastPose = "left";
+                player.setVelocityX(-160);
+                player.anims.play('left', true);
+            } else if (paddle.right){
+                tempsAnimPlayer = 0;
+                lastPose = "right";
+                player.setVelocityX(160);
+                player.anims.play('right', true);
+            } else {
+                player.setVelocityX(0);
+                player.anims.play('turn');
+            }
+            
+            //saut + jetpack
+            if (player.body.touching.down && paddle.A && hit == false){
+                player.setVelocityY(-330);
+                ableToUseJet = true;
+            }
+
+            if (!player.body.touching.down && paddle.A.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false){
+                checkUpisUp = true;
+            } if (paddle.A && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
+                jetpackValue = jetpackValue - 1
+                if(startJetPackDone == true){
+                    for(let i = 0; i < 1000; i ++){
+                        player.setVelocityY(-1*i);
+                        startJetPackDone = true;
+                    }
+                } else{player.setVelocityY(-300);}
+                if (jetpackValue < 0){jetpackValue = 0;}
+            }
+            
+            if(paddle.A.isUp && checkUpisUp == true && ableToUseJet == true){
+                startJetPackDone = false;
+                frameCheckOnce = false;
+            }
+
+            if(jetpackValue < 100){
+                if(player.x < 100){xJetText = 100;} 
+                else{xJetText = -100;}
+
+                text = this.add.text(player.x+xJetText, player.y, jetpackValue);
+                if(frameCheckOnce == false){
+                    var frameCheck = frame;
+                    frameCheckOnce = true;
+                }
+                while(frame <= frameCheck){
+                    text.destroy();
+                    frame = frame+1;
+                }
+            }
+
+            //tir du joueur
+            if (paddle.B && laserAlreadyShotPlayer == false){
+                if(lastPose == "left" || (paddle.left && paddle.B)){
+                    laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
+                    laserAlreadyShotPlayer = true;
+                    directionLaserPlayer = "left";
+                    animPlayer = "left";
+                    tempsAnimPlayer = 20;
+                } else if(lastPose == "right" || paddle.right && paddle.B){
+                    laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
+                    laserAlreadyShotPlayer = true;
+                    directionLaserPlayer = "right";
+                    animPlayer = "right";
+                    tempsAnimPlayer = 20;
+                } rechargePlayer = 100;
+            } if(tempsAnimPlayer > 0){
+                tempsAnimPlayer = tempsAnimPlayer - 1
+                player.anims.play(animPlayer, true);
+            }
         }
-        // text.destroy();
+
+        if(laserAlreadyShotPlayer == true){
+            this.physics.add.overlap(laserPlayer, astraunaute, hitAstraunauteLaser);
+            laserPlayer.setVelocityY(-5);
+            if(directionLaserPlayer == "left"){
+                laserPlayer.setVelocityX(-1000);
+            } else if(directionLaserPlayer == "right"){
+                laserPlayer.setVelocityX(1000);
+            }if(laserPlayer.x >= 1280 || laserPlayer.x <= 0){
+                laserPlayer.disableBody(true, true);
+            } rechargePlayer = rechargePlayer - 1;
+            if (rechargePlayer == 0){
+                laserAlreadyShotPlayer = false;
+            }
+        }
     }
 
     timerEnnemi = timerEnnemi + 1;
     //comportement de l'ennemi
-    //working but look at acceleration
+    //sometimes does moonwalk
     if(timerEnnemi >= 0 && timerEnnemi < 100 && pauseShootEnnemi == false){
         if(alreadyShuffle == false){
             frameDePause1 = chiffreAleatoire(10, 250);
             frameDePause2 = chiffreAleatoire(10, 250);
+            console.log(frameDePause1);
+            console.log(frameDePause2);
             deplacementEnnemi = (-chiffreAleatoire(100, 300));
             alreadyShuffle = true;
         } astraunaute.anims.play('marcheGauche', true);
         astraunaute.setVelocityX(deplacementEnnemi);
-    } else if (timerEnnemi > 100 && timerEnnemi < frameDePause1){
+        // console.log("gauche");
+    } else if (timerEnnemi >= 10 && timerEnnemi <= frameDePause1){
         astraunaute.anims.play('idleGauche', true);
         alreadyShuffle = false;
         astraunaute.setVelocityX(0);
-    } else if (timerEnnemi > frameDePause1 && timerEnnemi < (frameDePause1+frameDePause2) && pauseShootEnnemi == false ){
+        // console.log("standGauche");
+    } else if (timerEnnemi >= frameDePause1 && timerEnnemi <= (frameDePause1+frameDePause2) && pauseShootEnnemi == false ){
         if(alreadyShuffle == false){
             deplacementEnnemi = chiffreAleatoire(100, 300);
             alreadyShuffle = true;
         } astraunaute.anims.play('marcheDroit', true);
         astraunaute.setVelocityX(deplacementEnnemi);
-    } else if (timerEnnemi > (frameDePause1+frameDePause2) && timerEnnemi < (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false){
+        // console.log("droite");
+    } else if (timerEnnemi >= (frameDePause1+frameDePause2) && timerEnnemi <= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false){
         astraunaute.anims.play('idleDroit', true);
-        alreadyShuffle = false;
         astraunaute.setVelocityX(0);
-    } else if (timerEnnemi >= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false ){timerEnnemi = 0;}
-
+        // console.log("standDroit");
+    } else if (timerEnnemi >= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false){timerEnnemi = 0;alreadyShuffle = false;}
+    
     //invulnerabilite du joueur
     if(frameInvulnerable > 0){
         if(pv != 0 && reculDone == false){
@@ -398,6 +528,7 @@ function update (){
         if(tempsDePauseEnnemi >= 0){
             tempsDePauseEnnemi = tempsDePauseEnnemi - 1;
         } else if(tempsDePauseEnnemi <= 0){
+            console.log("test");
             pauseShootEnnemi = false;
         }
     }
@@ -413,36 +544,10 @@ function update (){
             laser.disableBody(true, true);
         } rechargeEnnemi = rechargeEnnemi - 1;
         if(rechargeEnnemi <= 50){
+            console.log("finPause");
             pauseShootEnnemi = false;
         } if (rechargeEnnemi == 0){
             laserAlreadyShotEnnemi = false;
-        }
-    }
-
-    if (keyA.isDown && hit == false && laserAlreadyShotPlayer == false){
-        if(lastPose == "left" || (cursors.left.isDown && keyA.isDown)){
-            laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
-            laserAlreadyShotPlayer = true;
-            directionLaserPlayer = "left";
-        } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
-            laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
-            laserAlreadyShotPlayer = true;
-            directionLaserPlayer = "right";
-        } rechargePlayer = 100;
-    }
-
-    if(laserAlreadyShotPlayer == true){
-        this.physics.add.overlap(laserPlayer, astraunaute, hitAstraunauteLaser);
-        laserPlayer.setVelocityY(-5);
-        if(directionLaserPlayer == "left"){
-            laserPlayer.setVelocityX(-1000);
-        } else if(directionLaserPlayer == "right"){
-            laserPlayer.setVelocityX(1000);
-        }if(laserPlayer.x >= 1280 || laserPlayer.x <= 0){
-            laserPlayer.disableBody(true, true);
-        } rechargePlayer = rechargePlayer - 1;
-        if (rechargePlayer == 0){
-            laserAlreadyShotPlayer = false;
         }
     }
     
