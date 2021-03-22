@@ -113,7 +113,7 @@ function preload (){
     this.load.image('ecranTitre', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/ecranTitre.png');
 
     //load de toutes les sprites sheets
-    this.load.spritesheet('dude', 'assets/dude.png', {frameWidth: 32, frameHeight: 48});
+    this.load.spritesheet('alien', 'fichier_de_travail/spriteSheetAlien-assets/spriteSheetAlien.png', {frameWidth: 34, frameHeight: 73});
     this.load.spritesheet('midground', 'fichier_de_travail/spriteSheetFond-assets/midgroundSpriteSheet.png', {frameWidth: 1870, frameHeight: 441});
     this.load.spritesheet('fireball', 'fichier_de_travail/spriteSheetFireBall-assets/spriteSheetFireBall.png', {frameWidth: 67, frameHeight: 114});
     this.load.spritesheet('astraunaute', 'fichier_de_travail/spriteSheetAstraunaute-assets/spriteSheetAstraunaute.png', {frameWidth: 42, frameHeight: 79});
@@ -125,23 +125,23 @@ function create (){
     this.ecranTitre.setOrigin(0, 0);
 
     //creation toutes les animations
-    //animation personnage joueur, tag = dude
+    //animation personnage joueur, tag = alien
     this.anims.create({
-        key: 'left',
-        frames: this.anims.generateFrameNumbers('dude', {start: 0, end: 3}),
+        key: 'gaucheSol',
+        frames: this.anims.generateFrameNumbers('alien', {start: 0, end: 3}),
         frameRate: 10,
         repeat: -1
     });
 
     this.anims.create({
         key: 'turn',
-        frames: [{key: 'dude', frame: 4}],
+        frames: [{key: 'alien', frame: 4}],
         frameRate: 20
     });
 
     this.anims.create({
-        key: 'right',
-        frames: this.anims.generateFrameNumbers('dude', {start: 5, end: 8}),
+        key: 'droiteSol',
+        frames: this.anims.generateFrameNumbers('alien', {start: 4, end: 7}),
         frameRate: 10,
         repeat: -1
     });
@@ -251,7 +251,7 @@ function update (){
 
             platforms.create(640, 675, 'ground'); //sol
 
-            player = this.physics.add.sprite(100, 600, 'dude');
+            player = this.physics.add.sprite(100, 600, 'alien');
             astraunaute = this.physics.add.sprite(700, 500, 'astraunaute');
 
             player.setBounce(0); //just for debug, when it's done set to 0.5 
@@ -326,12 +326,12 @@ function update (){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    player.anims.play('left', true);
+                    player.anims.play('gaucheSol', true);
                 } else if (cursors.right.isDown){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    player.anims.play('right', true);
+                    player.anims.play('droiteSol', true);
                 } else {
                     player.setVelocityX(0);
                     player.anims.play('turn');
