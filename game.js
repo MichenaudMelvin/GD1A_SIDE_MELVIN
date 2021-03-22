@@ -126,6 +126,7 @@ function create (){
 
     //creation toutes les animations
     //animation personnage joueur, tag = alien
+    //animation du personnage au sol
     this.anims.create({
         key: 'gaucheSol',
         frames: this.anims.generateFrameNumbers('alien', {start: 0, end: 3}),
@@ -134,17 +135,37 @@ function create (){
     });
 
     this.anims.create({
-        key: 'turn',
-        frames: [{key: 'alien', frame: 4}],
-        frameRate: 20
-    });
-
-    this.anims.create({
         key: 'droiteSol',
         frames: this.anims.generateFrameNumbers('alien', {start: 4, end: 7}),
         frameRate: 10,
         repeat: -1
     });
+
+    this.anims.create({
+        key: 'idleGaucheSol',
+        frames: [{key: 'alien', frame: 0}],
+        frameRate: 20
+    })
+    
+    this.anims.create({
+        key: 'idleDroiteSol',
+        frames: [{key: 'alien', frame: 4}],
+        frameRate: 20
+    })
+
+    this.anims.create({
+        key: 'gaucheJet',
+        frames: this.anims.generateFrameNumbers('alien', {start: 8, end: 11}),
+        frameRate: 10,
+        repeat: -1
+    })
+
+    this.anims.create({
+        key: 'droiteJet',
+        frames: this.anims.generateFrameNumbers('alien', {start: 12, end: 11}),
+        frameRate: 10,
+        repeat: -1
+    })
     
     //animation fireball, tag = fireball
     this.anims.create({
@@ -197,11 +218,13 @@ function create (){
     // astraunaute.anims.play('marcheDroit', true);
 
     cursors = this.input.keyboard.createCursorKeys();
-    keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A)
+    keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.cameras.main.setSize(1280, 720);
+    //valeur x et y de la taille du niveau
+    // this.cameras.main.setBounds(0, 0, 1280, 1440);
 }
 
 function update (){
-    // this.background.tilePositionX = this.cameras.scrollX * .3;
     if(resetGame == true){
         this.cameras.main.fadeIn(500, 0, 0, 0)
         this.ecranTitre = this.add.image(0, 0, 'ecranTitre');
@@ -217,6 +240,9 @@ function update (){
         tempsDePauseEcranTitre = 100;
         gameCanBeLoad = true;
     }
+    // if(gameCanBeLoad == false){
+    //     this.cameras.startFollow(ecranTitre);
+    // }
 
     if(gameCanBeLoad == true && gameLoad == false){
         tempsDePauseEcranTitre = tempsDePauseEcranTitre - 1
@@ -267,8 +293,6 @@ function update (){
             //this.physics.add.overlap(player, powerUp, powerUpFunction);
 
             //creation de la caméra
-            // this.cameras.main.startFollow(player);
-            // this.cameras.main.setSize(1280,720);
 
             //pour l'interface
             this.coeur_1_vide = this.add.image(player.x-50, player.y-550, 'coeurVide');
@@ -300,7 +324,6 @@ function update (){
         if (pv == 0){
             if(playerIsDead == false){
                 hit = true;
-                player.anims.play('turn', true);
                 tempsDeReload = 100;
                 playerIsDead = true;
             }
@@ -314,6 +337,8 @@ function update (){
             }
         }
 
+        this.cameras.main.startFollow(player, false, 1, 1, 0, 0);
+        
         //animation du midground en continu
         frameMidground = frameMidground+1;
         midground.anims.play('animatonMidground', true);
@@ -326,15 +351,18 @@ function update (){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    player.anims.play('gaucheSol', true);
+                    if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){console.log("test");player.anims.play('gaucheJet', true);}
+                    else{player.anims.play('gaucheSol', true);}
                 } else if (cursors.right.isDown){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    player.anims.play('droiteSol', true);
+                    if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('droiteJet', true);}
+                    else{player.anims.play('droiteSol', true);}
                 } else {
                     player.setVelocityX(0);
-                    player.anims.play('turn');
+                    if(lastPose == "left"){player.anims.play('idleGaucheSol', true);}
+                    else if(lastPose == "right"){player.anims.play('idleDroiteSol', true);}
                 }
 
                 //saut + jetpack
@@ -382,17 +410,17 @@ function update (){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "left";
+                        animPlayer = "gaucheSol";
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "right";
+                        animPlayer = "droiteSol";
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
-                    tempsAnimPlayer = tempsAnimPlayer - 1
+                    tempsAnimPlayer = tempsAnimPlayer - 1;
                     player.anims.play(animPlayer, true);
                 }
             }
@@ -403,15 +431,16 @@ function update (){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    player.anims.play('left', true);
+                    player.anims.play('gaucheSol', true);
                 } else if (paddle.right){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    player.anims.play('right', true);
+                    player.anims.play('droiteSol', true);
                 } else {
                     player.setVelocityX(0);
-                    player.anims.play('turn');
+                    if(lastPose == "left"){player.anims.play('idleGaucheSol', true);}
+                    else if(lastPose == "right"){player.anims.play('idleDroiteSol', true);}
                 }
                 
                 //saut + jetpack
@@ -459,13 +488,13 @@ function update (){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "left";
+                        animPlayer = "gaucheSol";
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || paddle.right && paddle.B){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "right";
+                        animPlayer = "droiteSol";
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
@@ -531,11 +560,11 @@ function update (){
                 pv = pv - 1;
             } if(reculDone == false){
                 if(lastPose == "left"){
-                    player.anims.play('left', true);
+                    player.anims.play('gaucheSol', true);
                     player.setVelocityX(200);
                     console.log("gauche")
                 } else if (lastPose == "right"){
-                    player.anims.play('right', true);
+                    player.anims.play('droiteSol', true);
                     player.setVelocityX(-200);
                     console.log("droite")
                 } hit = true;
