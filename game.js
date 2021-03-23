@@ -19,13 +19,14 @@ var config = {
 };
 
 //known issues
-// reload is broken
 // sometimes the ennemis does moonwalk
 // maybe other things
 
 //all variables
 var player;
 var platforms;
+var tiles;
+var layer;
 var cursors;
 var gameOver = false;
 
@@ -46,6 +47,9 @@ var ableToUseJet = false;
 var checkUpisUp = false;
 var startJetPackDone = false;
 var frameCheckOnce = false;
+var jetpackPowerUp;
+var playerHaveJetPack = false;
+var jetpackCanSpawn = false;
 
 //variables pour ennmis
 var timerEnnemi = 0;
@@ -101,7 +105,7 @@ function preload (){
     this.load.image('test', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/test.png');
     this.load.image('background', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/background.png');
     this.load.image('ground', 'fichier_de_travail/test.png');
-    // this.load.tilemap('ground', 'fichier_de_travail/test.json', null, Phaser.Tilemap.TILED_JSON);
+    // this.load.tilemapTiledJSON('ground', 'fichier_de_travail/test.json');
     // this.load.image('tilesGround', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/tileSheet.png');
     this.load.image('coeur', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeur.png');
     this.load.image('coeurVide', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeurVide.png');
@@ -114,9 +118,10 @@ function preload (){
 
     //load de toutes les sprites sheets
     this.load.spritesheet('alien', 'fichier_de_travail/spriteSheetAlien-assets/spriteSheetAlien.png', {frameWidth: 34, frameHeight: 73});
-    this.load.spritesheet('midground', 'fichier_de_travail/spriteSheetFond-assets/midgroundSpriteSheet.png', {frameWidth: 1870, frameHeight: 441});
+    this.load.spritesheet('midground', 'fichier_de_travail/spriteSheetFond-assets/midgroundSpriteSheet.png', {frameWidth: 4512, frameHeight: 441});
     this.load.spritesheet('fireball', 'fichier_de_travail/spriteSheetFireBall-assets/spriteSheetFireBall.png', {frameWidth: 67, frameHeight: 114});
     this.load.spritesheet('astraunaute', 'fichier_de_travail/spriteSheetAstraunaute-assets/spriteSheetAstraunaute.png', {frameWidth: 42, frameHeight: 79});
+    this.load.spritesheet('jetpackItem', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/spriteSheetJetpack.png', {frameWidth: 35, frameHeight: 37});
 }
 
 function create (){
@@ -126,43 +131,73 @@ function create (){
 
     //creation toutes les animations
     //animation personnage joueur, tag = alien
-    //animation du personnage au sol
+    //idle du personnage sans le jetpack
     this.anims.create({
-        key: 'gaucheSol',
+        key: 'idleGaucheSolSansJetpack',
+        frames: [{key: 'alien', frame: 0}],
+        frameRate: 20
+    })
+    
+    this.anims.create({
+        key: 'idleDroiteSolSansJetpack',
+        frames: [{key: 'alien', frame: 4}],
+        frameRate: 20
+    })
+
+    //quand jetpack rammasé
+    this.anims.create({
+        key: 'idleGaucheSolAvecJetpack',
+        frames: [{key: 'alien', frame: 8}],
+        frameRate: 20 
+    })
+
+    this.anims.create({
+        key: 'idleDroiteSolAvecJetpack',
+        frames: [{key: 'alien', frame: 12}],
+        frameRate: 20 
+    })
+    
+    //animation de marche du personnage sans le jetpack
+    this.anims.create({
+        key: 'gaucheSolSansJetpack',
         frames: this.anims.generateFrameNumbers('alien', {start: 0, end: 3}),
         frameRate: 10,
         repeat: -1
     });
 
     this.anims.create({
-        key: 'droiteSol',
+        key: 'droiteSolSansJetpack',
         frames: this.anims.generateFrameNumbers('alien', {start: 4, end: 7}),
         frameRate: 10,
         repeat: -1
     });
-
-    this.anims.create({
-        key: 'idleGaucheSol',
-        frames: [{key: 'alien', frame: 0}],
-        frameRate: 20
-    })
     
+    //animation de marche du personnage avec le jetpack
     this.anims.create({
-        key: 'idleDroiteSol',
-        frames: [{key: 'alien', frame: 4}],
-        frameRate: 20
-    })
-
-    this.anims.create({
-        key: 'gaucheJet',
+        key: 'gaucheSolAvecJetpack',
         frames: this.anims.generateFrameNumbers('alien', {start: 8, end: 11}),
         frameRate: 10,
         repeat: -1
     })
 
     this.anims.create({
-        key: 'droiteJet',
-        frames: this.anims.generateFrameNumbers('alien', {start: 12, end: 11}),
+        key: 'droiteSolAvecJetpack',
+        frames: this.anims.generateFrameNumbers('alien', {start: 13, end: 15}),
+        frameRate: 10,
+        repeat: -1
+    })
+    
+    //animation du personnage dans les aires sans le jetpack
+    this.anims.create({
+        key: 'gaucheAireAvecJetpack',
+        frames: this.anims.generateFrameNumbers('alien', {start: 16, end: 19}),
+        frameRate: 10,
+        repeat: -1
+    })
+
+    this.anims.create({
+        key: 'droiteAireAvecJetpack',
+        frames: this.anims.generateFrameNumbers('alien', {start: 20, end: 23}),
         frameRate: 10,
         repeat: -1
     })
@@ -207,7 +242,6 @@ function create (){
 
     this.anims.create({
         key: 'marcheDroit',
-        // frames: [{key: 'astraunaute', frame: 7}],
         frames: this.anims.generateFrameNumbers('astraunaute', {start: 5, end: 8}),
         frameRate: 10,
         repeat: -1,
@@ -216,6 +250,15 @@ function create (){
     // astraunaute.anims.play('idleDroit', true);
     // astraunaute.anims.play('marcheGauche', true);
     // astraunaute.anims.play('marcheDroit', true);
+
+
+    //animation power up, tag = jetpackItem
+    this.anims.create({
+        key: 'animationPowerUp',
+        frames: this.anims.generateFrameNumbers('jetpackItem', {start: 0, end: 3}),
+        frameRate: 10,
+        repeat: -1,
+    })
 
     cursors = this.input.keyboard.createCursorKeys();
     keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
@@ -268,17 +311,29 @@ function update (){
             sun = this.physics.add.staticGroup();
             sun.create(50, 100, 'hereComesTheSun');
 
-            midground = this.add.sprite(640, 424, 'midground');
+            midground = this.add.sprite(2400, 428, 'midground');
             // this.midground.setOrigin(0, 0);
             // this.midground.setScrollFactor(0);
             // midground.addTilesetImage('ground', 'tiles');
 
             platforms = this.physics.add.staticGroup();
 
-            platforms.create(640, 675, 'ground'); //sol
+            platforms.create(2264, 675, 'ground'); //sol
+
+            // platforms = this.make.tilemap({key: 'ground'});
+            // tiles = platforms.addTilesetImage('tileSheet', 'tiles');
+            // layer = platforms.createLayer(0, tiles, 0, 0);
+
+            
+            // var map = this.make.tilemap({key: 'ground'});
+
+            // var tiles = map.addTilesetImage('cybernoid', 'tiles');
+
+            // var layer = map.createLayer(0, tiles, 0, 0);
 
             player = this.physics.add.sprite(100, 600, 'alien');
             astraunaute = this.physics.add.sprite(700, 500, 'astraunaute');
+            
 
             player.setBounce(0); //just for debug, when it's done set to 0.5 
             player.setCollideWorldBounds(true);
@@ -286,13 +341,8 @@ function update (){
 
             //gestion des collisions
             this.physics.add.collider(player, platforms, colliderPlatformPlayer);
-            // this.physics.add.collider(laser, platforms, laserCollider);
             this.physics.add.collider(astraunaute, platforms);
             this.physics.add.overlap(player, astraunaute, hitPlayer);
-            //quand powerUp est touché
-            //this.physics.add.overlap(player, powerUp, powerUpFunction);
-
-            //creation de la caméra
 
             //pour l'interface
             this.coeur_1_vide = this.add.image(player.x-50, player.y-550, 'coeurVide');
@@ -336,6 +386,18 @@ function update (){
                 resetGame = true;
             }
         }
+        if(jetpackCanSpawn == true){
+            //creation du powerUp aux cordonnés de l'ennemi
+            jetpackPowerUp = this.physics.add.sprite(astraunaute.x, astraunaute.y, 'jetpackItem');
+            //hitbox différente, ici prend uniquement le jetpack, pas l'effet
+            jetpackPowerUp.setSize(9, 19, true);
+            //animation du powerUp
+            jetpackPowerUp.anims.play('animationPowerUp', true);
+            //collider/overlap du jetpack
+            this.physics.add.overlap(player, jetpackPowerUp, jetpackOverlap);
+            this.physics.add.collider(jetpackPowerUp, platforms);
+            jetpackCanSpawn = false;
+        }
 
         this.cameras.main.startFollow(player, false, 1, 1, 0, 0);
         
@@ -351,18 +413,27 @@ function update (){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){console.log("test");player.anims.play('gaucheJet', true);}
-                    else{player.anims.play('gaucheSol', true);}
+                    if(playerHaveJetPack == true){
+                        if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('gaucheAireAvecJetpack', true);}
+                        else{player.anims.play('gaucheSolAvecJetpack', true);}
+                    } else{player.anims.play('gaucheSolSansJetpack', true);}
                 } else if (cursors.right.isDown){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('droiteJet', true);}
-                    else{player.anims.play('droiteSol', true);}
+                    if(playerHaveJetPack == true){
+                        if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('droiteAireAvecJetpack', true);}
+                        else{player.anims.play('droiteSolAvecJetpack', true);}
+                    }else{player.anims.play('droiteSolSansJetpack', true);}
                 } else {
                     player.setVelocityX(0);
-                    if(lastPose == "left"){player.anims.play('idleGaucheSol', true);}
-                    else if(lastPose == "right"){player.anims.play('idleDroiteSol', true);}
+                    if(playerHaveJetPack == true){
+                        if(lastPose == "left"){player.anims.play('idleGaucheSolAvecJetpack', true);}
+                        else if(lastPose == "right"){player.anims.play('idleDroiteSolAvecJetpack', true);}
+                    } else{
+                        if(lastPose == "left"){player.anims.play('idleGaucheSolSansJetpack', true);}
+                        else if(lastPose == "right"){player.anims.play('idleDroiteSolSansJetpack', true);}
+                    }
                 }
 
                 //saut + jetpack
@@ -410,13 +481,13 @@ function update (){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "gaucheSol";
+                        animPlayer = "idleGaucheSolSansJetpack";
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "droiteSol";
+                        animPlayer = "idleDroiteSolSansJetpack";
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
@@ -425,22 +496,23 @@ function update (){
                 }
             }
 
+            //imposibilité de pouvoir les tester
             //controles manette
             if (paddleConnected == true){
                 if (paddle.left){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    player.anims.play('gaucheSol', true);
+                    player.anims.play('gaucheSolSansJetpack', true);
                 } else if (paddle.right){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    player.anims.play('droiteSol', true);
+                    player.anims.play('droiteSolSansJetpack', true);
                 } else {
                     player.setVelocityX(0);
-                    if(lastPose == "left"){player.anims.play('idleGaucheSol', true);}
-                    else if(lastPose == "right"){player.anims.play('idleDroiteSol', true);}
+                    if(lastPose == "left"){player.anims.play('idleGaucheSolSansJetpack', true);}
+                    else if(lastPose == "right"){player.anims.play('idleDroiteSolSansJetpack', true);}
                 }
                 
                 //saut + jetpack
@@ -488,13 +560,13 @@ function update (){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "gaucheSol";
+                        animPlayer = "idleGaucheSolSansJetpack";
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || paddle.right && paddle.B){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "droiteSol";
+                        animPlayer = "idleDroiteSolSansJetpack";
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
@@ -560,11 +632,11 @@ function update (){
                 pv = pv - 1;
             } if(reculDone == false){
                 if(lastPose == "left"){
-                    player.anims.play('gaucheSol', true);
+                    player.anims.play('gaucheSolSansJetpack', true);
                     player.setVelocityX(200);
                     console.log("gauche")
                 } else if (lastPose == "right"){
-                    player.anims.play('droiteSol', true);
+                    player.anims.play('droiteSolSansJetpack', true);
                     player.setVelocityX(-200);
                     console.log("droite")
                 } hit = true;
@@ -713,9 +785,9 @@ function colliderPlatformPlayer(){
 }
 
 //quand en contact avec le powerUp / overlap
-function powerUpFunction(){
-    powerUp.disableBody(true, true);
-    player.setVelocityY(-1500);
+function jetpackOverlap(){
+    jetpackPowerUp.disableBody(true, true);
+    playerHaveJetPack = true;
 }
 
 //quand le joueur tire sur l'ennmi / overlap
@@ -724,6 +796,7 @@ function hitAstraunauteLaser(){
     astraunaute.disableBody(true, true);
     hitAstraunauteByLaserPlayer = true;
     hitAstraunaute = true;
+    if(playerHaveJetPack == false){jetpackCanSpawn = true;}
 }
 
 //quand l'ennemi ou laserEnnmi touche le joueur / overlap
