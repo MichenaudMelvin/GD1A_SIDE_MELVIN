@@ -7,7 +7,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: {y: 300},
-            debug: false,
+            debug: true,
         }
     },
     input:{gamepad:true},
@@ -312,14 +312,11 @@ function update (){
             sun = this.physics.add.staticGroup();
             sun.create(50, 100, 'hereComesTheSun');
 
-            midground = this.add.sprite(2400, 428, 'midground');
-            // this.midground.setOrigin(0, 0);
-            // this.midground.setScrollFactor(0);
-            // midground.addTilesetImage('ground', 'tiles');
+            midground = this.add.sprite(2256, 441, 'midground');
 
             platforms = this.physics.add.staticGroup();
 
-            platforms.create(2264, 675, 'ground'); //sol
+            platforms.create(2256, 688, 'ground'); //sol
 
             // platforms = this.make.tilemap({key: 'ground'});
             // tiles = platforms.addTilesetImage('tileSheet', 'tiles');
@@ -332,11 +329,13 @@ function update (){
 
             // var layer = map.createLayer(0, tiles, 0, 0);
 
+            //entités + caméra
             player = this.physics.add.sprite(100, 600, 'alien');
             astraunaute = this.physics.add.sprite(700, 500, 'astraunaute');
             this.physics.world.setBounds(0, 0, 4512, 1440);
             this.cameras.main.setBounds(0, 0, 4512, 1440);
 
+            
             player.setBounce(0); //just for debug, when it's done set to 0.5 
             player.setCollideWorldBounds(true);
             astraunaute.setCollideWorldBounds(true);
@@ -378,15 +377,14 @@ function update (){
                 hit = true;
                 tempsDeReload = 100;
                 playerIsDead = true;
+                player.disableBody(true, true)
             }
             if(tempsDeReload > 0){
-                console.log(tempsDeReload);
                 tempsDeReload = tempsDeReload - 1;
-                console.log(tempsDeReload);
             } else if (tempsDeReload == 0){
-                this.gameOverScreen = this.add.image(0, 0, 'gameOverScreen');
-                this.gameOverScreen.setOrigin(0, 0);
-                this.cameras.main.startFollow(this.gameOverScreen);
+                tempsDeReload = tempsDeReload - 1;
+                this.gameOverScreen = this.add.image(player.x, player.y-400, 'gameOverScreen');
+            } else if(tempsDeReload < 0){
                 if(keyA.isDown){
                     // this.cameras.main.fadeOut(500, 0, 0, 0);
                     location.reload();
@@ -406,7 +404,7 @@ function update (){
             jetpackCanSpawn = false;
         }
 
-        this.cameras.main.startFollow(player, false, 1, 1, 0, 0);
+        this.cameras.main.startFollow(player, false, 1, 1, 0, 720);
         
         //animation du midground en continu
         frameMidground = frameMidground+1;
