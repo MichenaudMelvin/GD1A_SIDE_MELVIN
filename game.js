@@ -7,7 +7,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: {y: 300},
-            debug: true,
+            debug: false,
         }
     },
     input:{gamepad:true},
@@ -29,6 +29,7 @@ var tiles;
 var layer;
 var cursors;
 var gameOver = false;
+var keyA;
 
 var game = new Phaser.Game(config);
 var frame = 0;
@@ -50,6 +51,8 @@ var frameCheckOnce = false;
 var jetpackPowerUp;
 var playerHaveJetPack = false;
 var jetpackCanSpawn = false;
+var canBrake = false;
+var pressBrakeOneTime = false;
 
 //variables pour ennmis
 var timerEnnemi = 0;
@@ -57,7 +60,6 @@ var deplacementEnnemi;
 var alreadyShuffle = false;
 var frameDePause1;
 var frameDePause2;
-var keyA;
 
 //pour ennemis qui tire
 var directionLaserEnnemi;
@@ -104,15 +106,15 @@ function preload (){
     this.load.image('test', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/test.png');
     this.load.image('background', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/background.png');
     this.load.image('ground', 'fichier_de_travail/test.png');
-    // this.load.tilemapTiledJSON('ground', 'fichier_de_travail/test.json');
-    // this.load.image('tilesGround', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/tileSheet.png');
+    this.load.image('tilesGround', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/tileSheet.png');
+    this.load.tilemapTiledJSON('ground', 'fichier_de_travail/test.json');
     this.load.image('coeur', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeur.png');
     this.load.image('coeurVide', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/coeurVide.png');
     this.load.image('laser', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/laser.png');
     this.load.image('particule_1', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/particule_1.png');
     this.load.image('particule_2', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/particule_2.png');
     this.load.image('particule_3', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/particule_3.png');
-    this.load.image('hereComesTheSun', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/sun.png');
+    this.load.image('hereComesTheSun', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/sun.png'); //here comes the sun, bringing you love and shining on everyone https://youtu.be/zNTaVTMoNTk
     this.load.image('ecranTitre', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/ecranTitre.png');
     this.load.image('gameOverScreen', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/gameOverScreen.png');
 
@@ -123,6 +125,7 @@ function preload (){
     this.load.spritesheet('astraunaute', 'fichier_de_travail/spriteSheetAstraunaute-assets/spriteSheetAstraunaute.png', {frameWidth: 42, frameHeight: 79});
     this.load.spritesheet('jetpackItem', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/spriteSheetJetpack.png', {frameWidth: 35, frameHeight: 37});
     this.load.spritesheet('texteEcranTitre', 'fichier_de_travail/spriteSheetTexteEcranTitre-assets/spriteSheetTexteEcranTitre.png', {frameWidth: 804, frameHeight: 60});
+    this.load.spritesheet('texteGameOVer', 'fichier_de_travail/spriteSheetTexteGameOver-assets/spriteSheetTexteGameOver.png', {frameWidth: 856, frameHeight: 60});
 }
 
 function create (){
@@ -131,8 +134,7 @@ function create (){
     this.ecranTitre.setOrigin(0, 0);
 
     texteEcranTitre = this.add.sprite(850, 600, 'texteEcranTitre');
-    // player = this.physics.add.sprite(100, 600, 'alien');
-    // astraunaute = this.physics.add.sprite(700, 500, 'astraunaute');
+
     //creation toutes les animations
     //animation personnage joueur, tag = alien
     //idle du personnage sans le jetpack
@@ -267,11 +269,17 @@ function create (){
         repeat: -1
     })
 
+    //animation du texte de l'écran game over, texteGameOVer
+    this.anims.create({
+        key: 'animationTexteGameOver',
+        frames: this.anims.generateFrameNumbers('texteGameOVer', {start: 0, end: 19}),
+        frameRate: 15,
+        repeat: -1
+    })
+
     cursors = this.input.keyboard.createCursorKeys();
     keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.cameras.main.setSize(1280, 720);
-    //valeur x et y de la taille du niveau
-    // this.cameras.main.setBounds(0, 0, 1280, 1440);
 }
 
 function update (){
@@ -284,7 +292,6 @@ function update (){
     if(gameCanBeLoad == false){
         //pour faire clignoter le texte "appuyez sur A pour commencer"
         texteEcranTitre.anims.play('animationTexteEcranTitre', true);
-        // this.cameras.startFollow(ecranTitre);
     }
 
     if(gameCanBeLoad == true && gameLoad == false){
@@ -314,28 +321,20 @@ function update (){
 
             midground = this.add.sprite(2256, 441, 'midground');
 
+            // const platforms = this.make.tilemap({key: 'ground'});
+            // const tiles = platforms.addTilesetImage('tileSheet', 'tilesGround');
+
+            // const layer = platforms.createStaticLayer(0, tiles, 0, 0);
+
             platforms = this.physics.add.staticGroup();
-
             platforms.create(2256, 688, 'ground'); //sol
-
-            // platforms = this.make.tilemap({key: 'ground'});
-            // tiles = platforms.addTilesetImage('tileSheet', 'tiles');
-            // layer = platforms.createLayer(0, tiles, 0, 0);
-
             
-            // var map = this.make.tilemap({key: 'ground'});
-
-            // var tiles = map.addTilesetImage('cybernoid', 'tiles');
-
-            // var layer = map.createLayer(0, tiles, 0, 0);
-
             //entités + caméra
             player = this.physics.add.sprite(100, 600, 'alien');
             astraunaute = this.physics.add.sprite(700, 500, 'astraunaute');
             this.physics.world.setBounds(0, 0, 4512, 1440);
             this.cameras.main.setBounds(0, 0, 4512, 1440);
 
-            
             player.setBounce(0); //just for debug, when it's done set to 0.5 
             player.setCollideWorldBounds(true);
             astraunaute.setCollideWorldBounds(true);
@@ -377,20 +376,32 @@ function update (){
                 hit = true;
                 tempsDeReload = 100;
                 playerIsDead = true;
-                player.disableBody(true, true)
-            }
-            if(tempsDeReload > 0){
+                if(playerHaveJetPack == true){
+                    if(lastPose == "left"){player.anims.play('idleGaucheSolAvecJetpack', true);}
+                    else if(lastPose == "right"){player.anims.play('idleDroiteSolAvecJetpack', true);}
+                } else{
+                    if(lastPose == "left"){player.anims.play('idleGaucheSolSansJetpack', true);}
+                    else if(lastPose == "right"){player.anims.play('idleDroiteSolSansJetpack', true);}
+                }
+                player.setTint(0xff0000);
+                player.disableBody(false, false);
+            } if(tempsDeReload > 0){
                 tempsDeReload = tempsDeReload - 1;
             } else if (tempsDeReload == 0){
                 tempsDeReload = tempsDeReload - 1;
-                this.gameOverScreen = this.add.image(player.x, player.y-400, 'gameOverScreen');
+                console.log(tempsDeReload)
+                player.x = 640;
+                player.y = 619.5;
+                this.gameOverScreen = this.add.image(player.x, player.y-260, 'gameOverScreen');
+                //pour faire clignoter le texte "appuyez sur A pour recommencer"
+                texteGameOver = this.add.sprite(640, 600, 'texteGameOver');
+                texteGameOver.anims.play('animationTexteGameOver', true);
             } else if(tempsDeReload < 0){
-                if(keyA.isDown){
-                    // this.cameras.main.fadeOut(500, 0, 0, 0);
-                    location.reload();
-                }
+                //reload de la page web
+                if(keyA.isDown){location.reload();}
             }
         }
+
         if(jetpackCanSpawn == true){
             //creation du powerUp aux cordonnés de l'ennemi
             jetpackPowerUp = this.physics.add.sprite(astraunaute.x, astraunaute.y, 'jetpackItem');
@@ -414,7 +425,7 @@ function update (){
         if(hit == false){
             //controles clavier
             if(paddleConnected == false){
-                if (cursors.left.isDown){
+                if (cursors.left.isDown && pressBrakeOneTime == false){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
@@ -422,7 +433,7 @@ function update (){
                         if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('gaucheAireAvecJetpack', true);}
                         else{player.anims.play('gaucheSolAvecJetpack', true);}
                     } else{player.anims.play('gaucheSolSansJetpack', true);}
-                } else if (cursors.right.isDown){
+                } else if (cursors.right.isDown && pressBrakeOneTime == false){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
@@ -449,7 +460,8 @@ function update (){
 
                 if (!player.body.touching.down && cursors.up.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false && playerHaveJetPack == true){
                     checkUpisUp = true;
-                } if (cursors.up.isDown && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
+                } if (cursors.up.isDown && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0 && pressBrakeOneTime == false){
+                    canBrake = true;
                     jetpackValue = jetpackValue - 1
                     if(startJetPackDone == true){
                         for(let i = 0; i < 1000; i ++){
@@ -480,19 +492,38 @@ function update (){
                     }
                 }
 
+                //freinage d'urgence du jetpack
+                if(keyA.isDown && canBrake == true){
+                    if(pressBrakeOneTime == false){
+                        tempsFrein = 20;
+                        valeurANePasDepasser = player.y;
+                        pressBrakeOneTime = true;
+                    }
+                    if(tempsFrein > 0){
+                        tempsFrein = tempsFrein - 1
+                        if(player.y > valeurANePasDepasser){
+                            player.setVelocityY(-5);
+                        } else if(player.y < valeurANePasDepasser){
+                            player.setVelocityY(5);
+                        }
+                    }
+                }
+
                 //tir du joueur
-                if (keyA.isDown && laserAlreadyShotPlayer == false){
+                if (keyA.isDown && laserAlreadyShotPlayer == false && canBrake == false){
                     if(lastPose == "left" || (cursors.left.isDown && keyA.isDown)){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "idleGaucheSolSansJetpack";
+                        if(playerHaveJetPack == true){animPlayer = "idleGaucheSolAvecJetpack";}
+                        else{animPlayer = "idleGaucheSolSansJetpack";}
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || cursors.right.isDown && keyA.isDown){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "idleDroiteSolSansJetpack";
+                        if(playerHaveJetPack == true){animPlayer = "idleDroiteSolAvecJetpack";}
+                        else{animPlayer = "idleDroiteSolSansJetpack";}
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
@@ -587,7 +618,7 @@ function update (){
                     laserPlayer.setVelocityX(-1000);
                 } else if(directionLaserPlayer == "right"){
                     laserPlayer.setVelocityX(1000);
-                }if(laserPlayer.x >= 1280 || laserPlayer.x <= 0){
+                }if(laserPlayer.x >= (player.x+1280) || laserPlayer.x <= (player.x-1280)){
                     laserPlayer.disableBody(true, true);
                 } rechargePlayer = rechargePlayer - 1;
                 if (rechargePlayer == 0){
@@ -598,34 +629,28 @@ function update (){
 
         timerEnnemi = timerEnnemi + 1;
         //comportement de l'ennemi
-        //sometimes does moonwalk
+        //sometimes does moonwalk for some reasons
         if(timerEnnemi >= 0 && timerEnnemi < 100 && pauseShootEnnemi == false){
             if(alreadyShuffle == false){
                 frameDePause1 = chiffreAleatoire(10, 250);
                 frameDePause2 = chiffreAleatoire(10, 250);
-                console.log(frameDePause1);
-                console.log(frameDePause2);
                 deplacementEnnemi = (-chiffreAleatoire(100, 300));
                 alreadyShuffle = true;
             } astraunaute.anims.play('marcheGauche', true);
             astraunaute.setVelocityX(deplacementEnnemi);
-            // console.log("gauche");
         } else if (timerEnnemi >= 10 && timerEnnemi <= frameDePause1){
             astraunaute.anims.play('idleGauche', true);
             alreadyShuffle = false;
             astraunaute.setVelocityX(0);
-            // console.log("standGauche");
         } else if (timerEnnemi >= frameDePause1 && timerEnnemi <= (frameDePause1+frameDePause2) && pauseShootEnnemi == false ){
             if(alreadyShuffle == false){
                 deplacementEnnemi = chiffreAleatoire(100, 300);
                 alreadyShuffle = true;
             } astraunaute.anims.play('marcheDroit', true);
             astraunaute.setVelocityX(deplacementEnnemi);
-            // console.log("droite");
         } else if (timerEnnemi >= (frameDePause1+frameDePause2) && timerEnnemi <= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false){
             astraunaute.anims.play('idleDroit', true);
             astraunaute.setVelocityX(0);
-            // console.log("standDroit");
         } else if (timerEnnemi >= (frameDePause1+frameDePause2+((frameDePause1+frameDePause2)/2)) && pauseShootEnnemi == false){timerEnnemi = 0;alreadyShuffle = false;}
         
         //invulnerabilite du joueur
@@ -639,11 +664,9 @@ function update (){
                 if(lastPose == "left"){
                     player.anims.play('gaucheSolSansJetpack', true);
                     player.setVelocityX(200);
-                    console.log("gauche")
                 } else if (lastPose == "right"){
                     player.anims.play('droiteSolSansJetpack', true);
                     player.setVelocityX(-200);
-                    console.log("droite")
                 } hit = true;
                 player.setVelocityY(-100);
                 reculDone = true;
@@ -664,17 +687,13 @@ function update (){
             hitPlayerByFireBall = false
         }
 
-        // } else if(frameInvulnerable == 0){
-        //     this.tweens.add({alpha: 1,targets: player,})
-        // }
-
         if(hitAstraunauteByFireBall == true){
             hitAstraunaute = true;
             this.cameras.main.shake(200);
             hitAstraunauteByFireBall = false;}
 
         //permetra le tri de l'ennemi
-        if(player.y+10 >= astraunaute.y && player.y-10 <= astraunaute.y && hitAstraunaute == false){
+        if(player.y+10 >= astraunaute.y && player.y-10 <= astraunaute.y && hitAstraunaute == false && playerIsDead == false){
             if(laserAlreadyShotEnnemi == false){
                 if(player.x < astraunaute.x && player.x > astraunaute.x-800){
                     directionLaserEnnemi = "left";
@@ -698,7 +717,6 @@ function update (){
             if(tempsDePauseEnnemi >= 0){
                 tempsDePauseEnnemi = tempsDePauseEnnemi - 1;
             } else if(tempsDePauseEnnemi <= 0){
-                console.log("test");
                 pauseShootEnnemi = false;
             }
         }
@@ -710,11 +728,10 @@ function update (){
                 laser.setVelocityX(-1000);
             } else if(directionLaserEnnemi == "right"){
                 laser.setVelocityX(1000);
-            }if(laser.x >= 1280 || laser.x <= 0){
+            }if(laser.x >= (player.x+1280) || laser.x <= (player.x-1280)){
                 laser.disableBody(true, true);
             } rechargeEnnemi = rechargeEnnemi - 1;
             if(rechargeEnnemi <= 50){
-                console.log("finPause");
                 pauseShootEnnemi = false;
             } if (rechargeEnnemi == 0){
                 laserAlreadyShotEnnemi = false;
@@ -722,7 +739,7 @@ function update (){
         }
         
         //Pour la fireball (élément qui tue instantanément)
-        if(fireballCanBeGenerated == true){
+        if(fireballCanBeGenerated == true && playerIsDead == false){
             chanceFireball = chiffreAleatoire(0, 1999);
             if (chanceFireball == 1){
                 fireball = this.physics.add.sprite(player.x, player.y-1000, 'fireball');
@@ -782,6 +799,8 @@ function colliderPlatformPlayer(){
     hit = false;
     checkUpisUp = false;
     ableToUseJet = false;
+    canBrake = false;
+    pressBrakeOneTime = false;
     for(let i = 0; i < 9; i++){
         jetpackValue = jetpackValue + i;
     } if(jetpackValue > 100){
