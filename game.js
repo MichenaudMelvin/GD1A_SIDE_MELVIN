@@ -98,12 +98,17 @@ var frameMidground = 0;
 var paddleConnected = false;
 var paddle;
 
-//pour l'écran titre:
+//pour l'écran titre
 var gameCanBeLoad = false;
 var gameLoad = false;
 var tempsDePauseEcranTitre;
 var tempsDeReload;
 var playerIsDead = false;
+
+//pour la fusee
+var victoryPlayer = false;
+var tempsPhaseFusee = 0;
+var hitFuseeByFireball = false;
 
 function preload (){
     this.load.image('background', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/fond.png');
@@ -119,7 +124,8 @@ function preload (){
     this.load.image('hereComesTheSun', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/sun.png'); //here comes the sun, bringing you love and shining on everyone https://youtu.be/zNTaVTMoNTk
     // this.load.image('ecranTitre', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/ecranTitre.png');
     this.load.image('gameOverScreen', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/gameOverScreen.png');
-    this.load.image('testEcranTitre', 'forReadMeOrPresentation/testPourGitHubPages.png');
+    this.load.image('ecranTitreDuJeu', 'forReadMeOrPresentation/ecranTitreDuJeu.png'); //pour une raison iconnue github pages ne prenait pas en compte la ligne 120 qui était pourant active, avoir mit le fichier dans un autre dossier a fonctionné.
+    this.load.image('victoryScreen', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/victoryScreen.png');
 
     //load de toutes les sprites sheets
     this.load.spritesheet('alien', 'fichier_de_travail/spriteSheetAlien-assets/spriteSheetAlien.png', {frameWidth: 34, frameHeight: 73});
@@ -129,11 +135,12 @@ function preload (){
     this.load.spritesheet('jetpackItem', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/spriteSheetJetpack.png', {frameWidth: 35, frameHeight: 37});
     this.load.spritesheet('texteEcranTitre', 'fichier_de_travail/spriteSheetTexteEcranTitre-assets/spriteSheetTexteEcranTitre.png', {frameWidth: 804, frameHeight: 60});
     this.load.spritesheet('texteGameOVer', 'fichier_de_travail/spriteSheetTexteGameOver-assets/spriteSheetTexteGameOver.png', {frameWidth: 856, frameHeight: 60});
+    this.load.spritesheet('fusee', 'fichier_de_travail/sideScrollerFichierDeTravail-assets/spriteSheetFusee.png', {frameWidth: 47, frameHeight: 93});
 }
 
 function create (){
     //création de l'écran titre
-    this.ecranTitre = this.add.image(0, 0, 'testEcranTitre');
+    this.ecranTitre = this.add.image(0, 0, 'ecranTitreDuJeu');
     this.ecranTitre.setOrigin(0, 0);
 
     texteEcranTitre = this.add.sprite(850, 600, 'texteEcranTitre');
@@ -227,7 +234,6 @@ function create (){
         frameRate: 10,
         repeat: -1,
     });
-    // midground.anims.play('animatonMidground', true);
 
     //animation de l'ennemi, tag = astraunaute
     this.anims.create({
@@ -272,7 +278,7 @@ function create (){
         repeat: -1
     })
 
-    //animation du texte de l'écran game over, texteGameOVer
+    //animation du texte de l'écran game over, tag = texteGameOVer
     this.anims.create({
         key: 'animationTexteGameOver',
         frames: this.anims.generateFrameNumbers('texteGameOVer', {start: 0, end: 19}),
@@ -280,9 +286,18 @@ function create (){
         repeat: -1
     })
 
+    //animation de la fusee, tag = fusee
+    this.anims.create({
+        key: 'animationFusee',
+        frames: this.anims.generateFrameNumbers('fusee', {start: 1, end: 2}),
+        frameRate: 10,
+        repeat: -1
+    })
+
     cursors = this.input.keyboard.createCursorKeys();
     keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.cameras.main.setSize(1280, 720);
+    console.warn("Les warns là ↑ c'est normal, c'est que j'ai gérer mes sprites sheet d'une certaine manière et du coup Phaser reconnait pas certaines frames. Mais il manque pas d'animations en soit");
 }
 
 function update (){
@@ -340,11 +355,18 @@ function update (){
             player.setBounce(0.5); //just for debug, when it's done set to 0.5 
             player.setCollideWorldBounds(true);
             astraunaute.setCollideWorldBounds(true);
+            
+            //creation de la fusée
+            fusee = this.physics.add.sprite(500, 1200, 'fusee');
+            //gestion de la hitbox de la fusée
+            fusee.setSize(46, 81, false);
 
             //gestion des collisions
             this.physics.add.collider(player, platforms, colliderPlatformPlayer);
             this.physics.add.collider(astraunaute, platforms);
+            this.physics.add.collider(fusee, platforms);
             this.physics.add.overlap(player, astraunaute, hitPlayer);
+            this.physics.add.overlap(player, fusee, victory);
 
             //pour l'interface
             this.coeur_1_vide = this.add.image(player.x-50, player.y-1302, 'coeurVide');
@@ -489,20 +511,20 @@ function update (){
                     frameCheckOnce = false;
                 }
 
-                if(jetpackValue < 100){
-                    if(player.x < 100){xJetText = 100;} 
-                    else{xJetText = -100;}
+                // if(jetpackValue < 100){
+                //     if(player.x < 100){xJetText = 100;} 
+                //     else{xJetText = -100;}
 
-                    text = this.add.text(player.x+xJetText, player.y, jetpackValue);
-                    if(frameCheckOnce == false){
-                        var frameCheck = frame;
-                        frameCheckOnce = true;
-                    }
-                    while(frame <= frameCheck){
-                        text.destroy();
-                        frame = frame+1;
-                    }
-                }
+                //     // text = this.add.text(player.x+xJetText, player.y, jetpackValue);
+                //     if(frameCheckOnce == false){
+                //         var frameCheck = frame;
+                //         frameCheckOnce = true;
+                //     }
+                //     while(frame <= frameCheck){
+                //         // text.destroy();
+                //         frame = frame+1;
+                //     }
+                // }
 
                 //freinage d'urgence du jetpack
                 if(keyA.isDown && canBrake == true){
@@ -522,7 +544,7 @@ function update (){
                 }
 
                 //tir du joueur
-                if (keyA.isDown && laserAlreadyShotPlayer == false && canBrake == false){
+                if (keyA.isDown && laserAlreadyShotPlayer == false && canBrake == false && victoryPlayer == false){
                     if(lastPose == "left" || (cursors.left.isDown && keyA.isDown)){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
@@ -547,20 +569,31 @@ function update (){
             //imposibilité de pouvoir les tester
             //controles manette
             if (paddleConnected == true){
-                if (paddle.left){
+                if (paddle.left && pressBrakeOneTime == false){
                     tempsAnimPlayer = 0;
                     lastPose = "left";
                     player.setVelocityX(-160);
-                    player.anims.play('gaucheSolSansJetpack', true);
-                } else if (paddle.right){
+                    if(playerHaveJetPack == true){
+                        if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('gaucheAireAvecJetpack', true);}
+                        else{player.anims.play('gaucheSolAvecJetpack', true);}
+                    } else{player.anims.play('gaucheSolSansJetpack', true);}
+                } else if (paddle.right && pressBrakeOneTime == false){
                     tempsAnimPlayer = 0;
                     lastPose = "right";
                     player.setVelocityX(160);
-                    player.anims.play('droiteSolSansJetpack', true);
+                    if(playerHaveJetPack == true){
+                        if(checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){player.anims.play('droiteAireAvecJetpack', true);}
+                        else{player.anims.play('droiteSolAvecJetpack', true);}
+                    } else{player.anims.play('droiteSolSansJetpack', true);}
                 } else {
                     player.setVelocityX(0);
-                    if(lastPose == "left"){player.anims.play('idleGaucheSolSansJetpack', true);}
-                    else if(lastPose == "right"){player.anims.play('idleDroiteSolSansJetpack', true);}
+                    if(playerHaveJetPack == true){
+                        if(lastPose == "left"){player.anims.play('idleGaucheSolAvecJetpack', true);}
+                        else if(lastPose == "right"){player.anims.play('idleDroiteSolAvecJetpack', true);}
+                    } else{
+                        if(lastPose == "left"){player.anims.play('idleGaucheSolSansJetpack', true);}
+                        else if(lastPose == "right"){player.anims.play('idleDroiteSolSansJetpack', true);}
+                    }
                 }
                 
                 //saut + jetpack
@@ -569,9 +602,10 @@ function update (){
                     ableToUseJet = true;
                 }
 
-                if (!player.body.touching.down && paddle.A.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false){
+                if (!player.body.touching.down && paddle.A.isUp && ableToUseJet == true && jetpackValue > 0 && hit == false && playerHaveJetPack == true){
                     checkUpisUp = true;
-                } if (paddle.A && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0){
+                } if (paddle.A && checkUpisUp == true && ableToUseJet == true && jetpackValue > 0 && pressBrakeOneTime == false){
+                    canBrake = true;
                     jetpackValue = jetpackValue - 1
                     if(startJetPackDone == true){
                         for(let i = 0; i < 1000; i ++){
@@ -581,40 +615,59 @@ function update (){
                     } else{player.setVelocityY(-300);}
                     if (jetpackValue < 0){jetpackValue = 0;}
                 }
-                
+
                 if(paddle.A.isUp && checkUpisUp == true && ableToUseJet == true){
                     startJetPackDone = false;
                     frameCheckOnce = false;
                 }
 
-                if(jetpackValue < 100){
-                    if(player.x < 100){xJetText = 100;} 
-                    else{xJetText = -100;}
+                // if(jetpackValue < 100){
+                //     if(player.x < 100){xJetText = 100;} 
+                //     else{xJetText = -100;}
 
-                    text = this.add.text(player.x+xJetText, player.y, jetpackValue);
-                    if(frameCheckOnce == false){
-                        var frameCheck = frame;
-                        frameCheckOnce = true;
+                //     // text = this.add.text(player.x+xJetText, player.y, jetpackValue);
+                //     if(frameCheckOnce == false){
+                //         var frameCheck = frame;
+                //         frameCheckOnce = true;
+                //     }
+                //     while(frame <= frameCheck){
+                //         // text.destroy();
+                //         frame = frame+1;
+                //     }
+                // }
+
+                //freinage d'urgence du jetpack
+                if(paddle.A && canBrake == true){
+                    if(pressBrakeOneTime == false){
+                        tempsFrein = 20;
+                        valeurANePasDepasser = player.y;
+                        pressBrakeOneTime = true;
                     }
-                    while(frame <= frameCheck){
-                        text.destroy();
-                        frame = frame+1;
+                    if(tempsFrein > 0){
+                        tempsFrein = tempsFrein - 1
+                        if(player.y > valeurANePasDepasser){
+                            player.setVelocityY(-5);
+                        } else if(player.y < valeurANePasDepasser){
+                            player.setVelocityY(5);
+                        }
                     }
                 }
 
                 //tir du joueur
-                if (paddle.B && laserAlreadyShotPlayer == false){
+                if (paddle.B && laserAlreadyShotPlayer == false && canBrake == false && victoryPlayer == false){
                     if(lastPose == "left" || (paddle.left && paddle.B)){
                         laserPlayer = this.physics.add.sprite(player.x+10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "left";
-                        animPlayer = "idleGaucheSolSansJetpack";
+                        if(playerHaveJetPack == true){animPlayer = "idleGaucheSolAvecJetpack";}
+                        else{animPlayer = "idleGaucheSolSansJetpack";}
                         tempsAnimPlayer = 20;
                     } else if(lastPose == "right" || paddle.right && paddle.B){
                         laserPlayer = this.physics.add.sprite(player.x-10, player.y, 'laser');
                         laserAlreadyShotPlayer = true;
                         directionLaserPlayer = "right";
-                        animPlayer = "idleDroiteSolSansJetpack";
+                        if(playerHaveJetPack == true){animPlayer = "idleDroiteSolAvecJetpack";}
+                        else{animPlayer = "idleDroiteSolSansJetpack";}
                         tempsAnimPlayer = 20;
                     } rechargePlayer = 100;
                 } if(tempsAnimPlayer > 0){
@@ -674,10 +727,13 @@ function update (){
                 pv = pv - 1;
             } if(reculDone == false){
                 if(lastPose == "left"){
-                    player.anims.play('gaucheSolSansJetpack', true);
+                    player.anims.play('', true);
+                    if(playerHaveJetPack == true){player.anims.play('gaucheSolAvecJetpack', true);}
+                    else{player.anims.play('gaucheSolSansJetpack', true);}
                     player.setVelocityX(200);
                 } else if (lastPose == "right"){
-                    player.anims.play('droiteSolSansJetpack', true);
+                    if(playerHaveJetPack == true){player.anims.play('droiteSolAvecJetpack', true);}
+                    else{player.anims.play('droiteSolSansJetpack', true);}
                     player.setVelocityX(-200);
                 } hit = true;
                 player.setVelocityY(-100);
@@ -689,6 +745,7 @@ function update (){
             else{player.setAlpha(1);}
         }
 
+        //si une entité est touché par la météorite
         if(hitPlayerByFireBall == true){
             this.cameras.main.shake(200);
             pv = 0;
@@ -703,8 +760,19 @@ function update (){
             hitAstraunaute = true;
             this.cameras.main.shake(200);
             hitAstraunauteByFireBall = false;}
+        
+        //si le joueur est dans la fusée et que la météorite touche la fusée, cela est considéré comme un game over
+        if(hitFuseeByFireball == true){
+            this.cameras.main.shake(200);
+            pv = 0;
+            this.coeur_1.destroy();
+            this.coeur_2.destroy();
+            this.coeur_3.destroy();
+            fireball.disableBody(true, true);
+            hitFuseeByFireball = false;
+        }
 
-        //permetra le tri de l'ennemi
+        //permetra le tir de l'ennemi
         if(player.y+10 >= astraunaute.y && player.y-10 <= astraunaute.y && hitAstraunaute == false && playerIsDead == false){
             if(laserAlreadyShotEnnemi == false){
                 if(player.x < astraunaute.x && player.x > astraunaute.x-800){
@@ -769,7 +837,8 @@ function update (){
                 } fireballCanBeGenerated = false;
                 this.physics.add.collider(fireball, platforms, crashFireball);
                 this.physics.add.overlap(fireball, player, fireballHitingPlayer);
-                this.physics.add.overlap(fireball, astraunaute, fireballHitingOppo);
+                this.physics.add.overlap(fireball, fusee, hitFusee);
+                this.physics.add.overlap(fireball, astraunaute, fireballHitingAstronaut);
             }
         } else if (fireballCanBeGenerated == false){
             if(fireball.y >= 1450){
@@ -803,6 +872,42 @@ function update (){
                 fireballCanBeGenerated = true;
             }
         }
+
+        //si le joueur a touché la fusee
+        if(victoryPlayer == true){
+            player.disableBody(true, true);
+            if(tempsPhaseFusee == 0){
+                tempsPhaseFusee = -1;
+            } else if(tempsPhaseFusee < 0){
+                tempsPhaseFusee = tempsPhaseFusee - 1;
+                //si tempsPhaseFusee est pair, décalage de valeur "-tempsPhaseFusee" vers la droite, sinon décalage de valeur "tempsPhaseFusee" vers la gauche, pour créer un effet de tremblememnt
+                if(tempsPhaseFusee%2 == 0){fusee.setVelocityX(-tempsPhaseFusee);}
+                else{fusee.setVelocityX(tempsPhaseFusee);}
+            }
+            if(tempsPhaseFusee <= -250){
+                tempsPhaseFusee = 1;
+            } else if(tempsPhaseFusee == 1){
+                fusee.anims.play('animationFusee', true);
+                fusee.setVelocityX(0);
+                fusee.setVelocityY(-500);
+            }
+            if(fusee.y <= 500){
+                fusee.disableBody(true, true);
+                if(tempsPhaseFusee == 1){
+                    playerIsDead = true;
+                    player.x = 640;
+                    player.y = 619.5;
+                    decalageVerticaleCamera = 260;
+                    this.gameOverScreen = this.add.image(player.x, player.y-259, 'victoryScreen');
+                    //pour faire clignoter le texte "appuyez sur A pour recommencer"
+                    texteGameOver = this.add.sprite(640, 600, 'texteGameOver');
+                    texteGameOver.anims.play('animationTexteGameOver', true);
+                    tempsPhaseFusee = 2;
+                } else if(tempsPhaseFusee == 2){
+                    if(keyA.isDown){location.reload();}
+                }
+            }
+        }
     }
 }
 
@@ -825,6 +930,9 @@ function jetpackOverlap(){
     jetpackPowerUp.disableBody(true, true);
     playerHaveJetPack = true;
 }
+
+//condition de victoire
+function victory(){victoryPlayer = true;}
 
 //quand le joueur tire sur l'ennmi / overlap
 function hitAstraunauteLaser(){
@@ -849,8 +957,16 @@ function crashFireball(){particuleGenerate = false;crashFireballTest = true;}
 //quand la fireball touche le joueur / overlap
 function fireballHitingPlayer(){hitPlayerByFireBall = true;fireballCanBeGenerated = true}
 
+//quand la fireball touche la fusée et que le joueur est dedant / overlap
+function hitFusee(){
+    if(victoryPlayer == true){
+        fusee.disableBody(true, true);
+        hitFuseeByFireball = true;
+    }
+}
+
 //quand la fireball touche l'ennmi / overlap
-function fireballHitingOppo(){
+function fireballHitingAstronaut(){
     fireball.disableBody(true, true);
     astraunaute.disableBody(true, true)
     fireballCanBeGenerated = true;

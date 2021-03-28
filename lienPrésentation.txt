@@ -1,2 +1,3 @@
 dans README.md ou :
-[liens] si j'ai pas oublié
+lien avec les captures --> https://docs.google.com/presentation/d/1XRFPne7oHW5WBSpikO8SqhJ52vYbCzDz7epfjX4xNtg/edit?usp=sharing <-- lien avec les captures
+lien pdf --> <-- lien pdf
