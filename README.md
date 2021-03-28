@@ -17,23 +17,28 @@ ou allez à l'adresse https://michenaudmelvin.github.io/GD1A_SIDE_MICHENAUD/ (re
 
 ## **Gameplay :**
 Déplacement sur l’axe X avec les flèches directionnels :
-![deplacement](forReadMeOrPresentation/captures/deplacement.gif)
-<!-- {:height="50%" width="50%"} -->
+-----------------
+<img src="forReadMeOrPresentation/captures/deplacement.gif" width="150" height="81">
 
-Possibilité de tirer avec A :
-![tir](forReadMeOrPresentation/captures/laser.gif)
+Possibilité de tirer avec A :  
+-----------------
+<img src="forReadMeOrPresentation/captures/laser.gif" width="150" height="81">
 
 Quand on tue un astronaute, on récupère son jetpack :
-![astronaute](forReadMeOrPresentation/captures/jetpackOptention.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpackOptention.gif" width="150" height="81">
 
-Jetpack avec lequel il est possible de s’envoler (durée de vol max : 200 frames soit environ 3 secondes):
-![jetpack](forReadMeOrPresentation/captures/jetpack.gif)
+Jetpack avec lequel il est possible de s’envoler (durée de vol max : 200 frames soit environ 3 secondes) :
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpack.gif" width="150" height="81">
 
 Il est impossible de tirer pendant l'utilisation du jetpack, cela vous fera freinez :
-![jetpackFrein](forReadMeOrPresentation/captures/jetpackFrein.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpackFrein.gif" width="150" height="81">
 
 Attention ! Parfois des météorites tombent du ciel et vous tue instantanément :
-![meteorite](forReadMeOrPresentation/captures/fireball.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/fireball.gif" width="150" height="81">
 
 ## **A propos**
 C'est un petit jeu que j'ai fait avec [phaser 3](https://github.com/photonstorm/phaser)  
@@ -50,22 +55,28 @@ or go to https://michenaudmelvin.github.io/GD1A_SIDE_MICHENAUD/ (recommended)
 
 ## **Gameplay :**
 You can move on the x axis with directional arrows :
-![deplacement](forReadMeOrPresentation/captures/deplacement.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/deplacement.gif" width="150" height="81">
 
 You can shoot with A :
-![tir](forReadMeOrPresentation/captures/laser.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/laser.gif" width="150" height="81">
 
 When you kill an astronaut, you collect his jetpack :
-![astronaute](forReadMeOrPresentation/captures/jetpackOptention.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpackOptention.gif" width="150" height="81">
 
 And obvisly with this jetpack, you can fly :
-![jetpack](forReadMeOrPresentation/captures/jetpack.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpack.gif" width="150" height="81">
 
 You cannot shoot while using your jetpack, pressing A makes you brake :
-![jetpackFrein](forReadMeOrPresentation/captures/jetpackFrein.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/jetpackFrein.gif" width="150" height="81">
 
 Watch out ! Someties meteorites fall from the sky and kill you instantly :
-![meteorite](forReadMeOrPresentation/captures/fireball.gif)
+-----------------
+<img src="forReadMeOrPresentation/captures/fireball.gif" width="150" height="81">
 
 ## **About**
 This is a small game made with [phaser 3](https://github.com/photonstorm/phaser)  
